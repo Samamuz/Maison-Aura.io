@@ -3,14 +3,39 @@ import { GoogleGenAI, Chat } from "@google/genai";
 
 @Injectable({ providedIn: 'root' })
 export class AiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
 
-  constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env['API_KEY']! });
+  private getApiKey(): string {
+    const metaEnv = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : undefined;
+    const processEnv = (typeof process !== 'undefined' && (process as any).env) ? (process as any).env : undefined;
+
+    return (
+      metaEnv?.GEMINI_API_KEY ??
+      metaEnv?.VITE_GEMINI_API_KEY ??
+      metaEnv?.API_KEY ??
+      metaEnv?.VITE_API_KEY ??
+      processEnv?.GEMINI_API_KEY ??
+      processEnv?.API_KEY ??
+      ''
+    );
+  }
+
+  private getClient(): GoogleGenAI {
+    if (this.ai) return this.ai;
+
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      throw new Error(
+        "Missing API key. Set GEMINI_API_KEY in .env.local (or VITE_GEMINI_API_KEY for Vite-style env exposure)."
+      );
+    }
+
+    this.ai = new GoogleGenAI({ apiKey });
+    return this.ai;
   }
 
   createChat() {
-    return this.ai.chats.create({
+    return this.getClient().chats.create({
       model: 'gemini-2.5-flash',
       config: {
         systemInstruction: `Tu es Aura, le concierge virtuel de 'Maison Aura', un salon de coiffure de luxe à Paris (1er Arrondissement).

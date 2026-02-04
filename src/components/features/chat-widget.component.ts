@@ -114,7 +114,18 @@ export class ChatWidgetComponent {
   toggleChat() {
     this.isOpen.update(v => !v);
     if (this.isOpen() && !this.chatSession) {
-      this.chatSession = this.aiService.createChat();
+      try {
+        this.chatSession = this.aiService.createChat();
+      } catch (error) {
+        console.error('Chat initialization error:', error);
+        this.messages.update(msgs => [
+          ...msgs,
+          {
+            role: 'model',
+            text: "Le concierge Aura n'est pas disponible pour le moment (configuration manquante)."
+          }
+        ]);
+      }
     }
   }
 
